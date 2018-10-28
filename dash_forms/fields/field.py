@@ -1,22 +1,21 @@
 import dash_core_components as dcc
+from dash.dependencies import Input, Output
 import dash_html_components as dhtml
-from dash.dependencies import Input as dInput, State as dState, Output as dOutput
 
 from ..exceptions import FieldValidationError
 
 
 class Field:
-    def __init__(self, id_builder, label=None, default=None, required=True,
-                 validation_dependencies='self'):
-        self.id_builder = id_builder
+    def __init__(self, label=None, *, default=None, required=True, auto_validate=True):
         self.label = label
         self.required = required
         self.default = default
-        self.validation_dependencies = []
-        if validation_dependencies == 'self':
-            self.validation_dependencies = self.dependencies()
-        elif validation_dependencies is not None:
-            self.validation_dependencies = validation_dependencies
+        self.chained_id = None
+        self.auto_validate = auto_validate
+
+    @property
+    def component_id(self):
+        return str(self.chained_id)
 
     @property
     def default(self):
@@ -31,30 +30,30 @@ class Field:
             raise FieldValidationError('This field is required.')
         return data if len(data) > 1 else data[0]
 
-    def dependencies(self, cls=dInput):
-        return [cls(self.id_builder('value'), 'value'),]
+    def dependencies(self, cls=Input):
+        return [cls(self.chained_id('value'), 'value'),]
 
     def render_input(self):
-        return dcc.Input(type='text', value=str(self.default), id=self.id_builder('value'))
+        return dcc.Input(type='text', value=str(self.default), id=self.chained_id('value'))
 
     def render(self):
         if self.label is not None:
             input_row = dhtml.Div([
                 dhtml.Div(self.label, className='field_label'),
                 dhtml.Div(self.render_input(), className='field_input'),
-            ], id=self.id_builder('row'), className='field_row')
+            ], id=self.chained_id('row'), className='field_row')
         else:
             input_row = dhtml.Div(
                 dhtml.Div(self.render_input(), className='field_input one_col'),
-                id=self.id_builder('row'),
+                id=self.chained_id('row'),
                 className='field_row',
             )
 
         return dhtml.Div([
             input_row,
             dhtml.Div(
-                dhtml.Div(className='errors', id=self.id_builder('errors')),
-                id=self.id_builder('errors_wrapper'),
+                dhtml.Div(className='errors', id=self.chained_id('errors')),
+                id=self.chained_id('errors_wrapper'),
                 className='field_errors_row',
             ),
         ])
@@ -63,25 +62,29 @@ class Field:
         return cleaned_data
 
     def bind_callbacks(self, app):
-        if self.validation_dependencies:
-            @app.callback(
-                dOutput(self.id_builder('errors_wrapper'), 'style'),
-                self.validation_dependencies,
-            )
-            def display_errors(*args):
-                display = 'none'
-                try:
-                    self.validate(args)
-                except FieldValidationError as e:
-                    display = 'block'
-                return {'display': display}
+        if not self.auto_validate:
+            return
+
+        validation_dependencies = self.dependencies()
             
-            @app.callback(
-                dOutput(self.id_builder('errors'), 'children'),
-                self.validation_dependencies,
-            )
-            def print_errors(*args):
-                try:
-                    self.validate(args)
-                except FieldValidationError as e:
-                    return str(e)
+        @app.callback(
+            Output(self.chained_id('errors_wrapper'), 'style'),
+            validation_dependencies,
+        )
+        def display_errors(*args):
+            display = 'none'
+            try:
+                self.validate(args)
+            except FieldValidationError as e:
+                display = 'block'
+            return {'display': display}
+        
+        @app.callback(
+            Output(self.chained_id('errors'), 'children'),
+            validation_dependencies,
+        )
+        def print_errors(*args):
+            try:
+                self.validate(args)
+            except FieldValidationError as e:
+                return str(e)

@@ -1,21 +1,18 @@
-class ComponentId(list):
+class ChainedId(list):
     joiner = '__'
 
     def __init__(self, ids):
-        if type(ids) is str:
+        if isinstance(ids, str):
             ids = [ids]
         super().__init__(ids)
 
-    def __call__(self, element_name=None):
-        parts = self if element_name is None else [*self, element_name]
+    def __call__(self, child=None):
+        parts = self if child is None else [*self, child]
         # Cannot have periods in dash ids
         return self.joiner.join(parts).replace('.', '_')
 
-    def last(self):
-        return self[-1]
-
-    def element_name(self, element_id):
-        return element_id[len(self('')):]
+    def __str__(self):
+        return self()
 
     def add(self, *args):
         return self.__class__([*self, *args])

@@ -17,7 +17,7 @@ class NumberField(Field):
     def validate(self, data):
         x = super().validate(data)
         if x is None or x == '':
-            return
+            return None
 
         try:
             x = self.parse(x)
