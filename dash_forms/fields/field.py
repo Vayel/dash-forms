@@ -6,10 +6,11 @@ from ..exceptions import FieldValidationError
 
 
 class Field:
+
     def __init__(self, label=None, *, default=None, required=True, auto_validate=True):
         self.label = label
         self.required = required
-        self.default = default
+        self._default = default
         self.chained_id = None
         self.auto_validate = auto_validate
 
@@ -19,11 +20,12 @@ class Field:
 
     @property
     def default(self):
-        return self.default_
+        return self._default
 
     @default.setter
     def default(self, val):
-        self.default_ = val
+        # To be overwritten by subclasses that want to make checks
+        self._default = val
 
     def validate(self, data):
         if self.required and (None in data or '' in data):

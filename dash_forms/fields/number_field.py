@@ -1,7 +1,3 @@
-import dash_core_components as dcc
-import dash_html_components as dhtml
-from dash.dependencies import Input as dInput, State as dState, Output as dOutput
-
 from ..exceptions import FieldValidationError
 from .field import Field
 
@@ -23,7 +19,7 @@ class NumberField(Field):
             x = self.parse(x)
         except ValueError:
             raise FieldValidationError('The value must be a number.')
-            
+
         if self.min is not None and x < self.min:
             raise FieldValidationError('The value cannot be lower than {0}.'.format(self.min))
         if self.max is not None and x > self.max:

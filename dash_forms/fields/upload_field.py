@@ -1,22 +1,23 @@
 import dash_core_components as dcc
 import dash_html_components as dhtml
-from dash.dependencies import Input as dInput, State as dState, Output as dOutput
+from dash.dependencies import Input, Output
 
 from .field import Field
 
 
 class UploadField(Field):
+
     def __init__(self, *args, clearable=False, **kwargs):
         super().__init__(*args, **kwargs)
         self.clearable = clearable
 
-    def dependencies(self, cls=dInput):
-        return [cls(self.id_builder('value'), 'contents'),]
+    def dependencies(self, cls=Input):
+        return [cls(self.chained_id('value'), 'contents'),]
 
     def render_input(self):
         # TODO: clearable
         return dcc.Upload(
-            id=self.id_builder('value'),
+            id=self.chained_id('value'),
             className='upload',
         )
 
@@ -24,8 +25,8 @@ class UploadField(Field):
         super().bind_callbacks(app)
 
         @app.callback(
-            dOutput(self.id_builder('value'), 'children'),
-            [dInput(self.id_builder('value'), 'filename')]
+            Output(self.chained_id('value'), 'children'),
+            [Input(self.chained_id('value'), 'filename')]
         )
         def contents(fname):
             if fname is None:

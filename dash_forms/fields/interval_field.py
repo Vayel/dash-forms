@@ -9,6 +9,7 @@ from ..exceptions import FieldValidationError
 
 
 class IntervalField(Field):
+
     def __init__(self, id_builder, *args, min=None, max=None, different=True, default=None,
                  required=None, is_int=False, **kwargs):
 
