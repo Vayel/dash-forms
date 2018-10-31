@@ -5,7 +5,23 @@ import dash_html_components as dhtml
 from ..exceptions import FieldValidationError
 
 
-class Field:
+def _save_args(f):
+    def wrapper(self, *args, **kwargs):
+        f(self, *args, **kwargs)
+        self._init_args = args
+        self._init_kwargs = kwargs
+    return wrapper
+
+
+class _FieldMetaclass(type):
+
+    def __new__(meta, name, bases, attrs):
+        if '__init__' in attrs:
+            attrs['__init__'] = _save_args(attrs['__init__'])
+        return super().__new__(meta, name, bases, attrs)
+
+
+class Field(metaclass=_FieldMetaclass):
 
     def __init__(self, label=None, *, default=None, required=True, auto_validate=True):
         self.label = label

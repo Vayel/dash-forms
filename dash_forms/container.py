@@ -1,5 +1,4 @@
 from abc import ABCMeta
-from copy import copy
 
 import dash_core_components as dcc
 from dash.dependencies import Input, State, Output
@@ -24,7 +23,7 @@ class Container(metaclass=_ContainerMeta):
     SHOW_HTML = dhtml.I(className='fa fa-angle-right')
 
     def __init__(self, *, default=None, collapsable=False, title=None, validation_dependencies='children'):
-        self.chained_id = ChainedId('{0}-{1}'.format(self.__class__, self.instance_count))
+        self.chained_id = ChainedId('{0}-{1}'.format(self.__class__.__name__, self.__class__.instance_count))
         self.__class__.instance_count += 1
 
         self.children = self._build_children()
@@ -44,7 +43,7 @@ class Container(metaclass=_ContainerMeta):
         for name, attr in self.__class__.__dict__.items():
             if not isinstance(attr, Field):
                 continue
-            child = copy(attr)
+            child = attr.__class__(*attr._init_args, **attr._init_kwargs)
             child.chained_id = self.chained_id.add(name)
             children.append(child)
         return children
@@ -75,7 +74,7 @@ class Container(metaclass=_ContainerMeta):
         cleaned = {}
         i = 0
         for child in self.children:
-            n_deps = len(child.dependencies(Input))
+            n_deps = len(child.dependencies())
             cleaned[child.chained_id[-1]] = child.validate(data[i:i+n_deps])
             i += n_deps
         return cleaned
